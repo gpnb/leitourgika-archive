@@ -9,7 +9,7 @@
 #define errExit(msg)    do { perror(msg); exit(EXIT_FAILURE); \
                         } while (0)
 
-#define BUF_SIZE 1024   /* Maximum size for exchanged string */
+#define BUF_SIZE 15   /* Maximum size for exchanged string */
 
 /* Define a structure that will be imposed on the shared
     memory object */

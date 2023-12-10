@@ -7,6 +7,8 @@
 
 #include "common.h"
 
+void * writer_func_b(void * memseg);
+
 void * reader_func_b(void * memseg);
 
 int
@@ -66,6 +68,9 @@ main(int argc, char *argv[])
     // go back to the other proccess
     if (sem_post(&shmp->wa) == -1)
         errExit("sem_post");
+    
+    if (sem_post(&shmp->wb) == -1)
+        errExit("sem_post");
 
 
     int res;
@@ -77,10 +82,25 @@ main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
     //reader_func_b(shmp);
+    int res2;
+    pthread_t writer_b;
+    void *thread_result2;
+    res2 = pthread_create(&writer_b, NULL, writer_func_b, (void *)shmp);
+    if (res2 != 0) {
+        perror("Thread creation failed");
+        exit(EXIT_FAILURE);
+    }
+
+
     sleep(5);
     printf("waiting for thread to finish...\n");
     res = pthread_join(reader_b, &thread_result);
     if (res != 0) {
+        perror("Thread join failed");
+        exit(EXIT_FAILURE);
+    }
+    res2 = pthread_join(writer_b, &thread_result2);
+    if (res2 != 0) {
         perror("Thread join failed");
         exit(EXIT_FAILURE);
     }
@@ -92,7 +112,65 @@ main(int argc, char *argv[])
     exit(EXIT_SUCCESS);
 }
 
+void * writer_func_b(void * memseg) {
+    printf("writer b is running\n");
+    struct shmbuf  *shmp = memseg;
+
+
+
+    char ch;
+    int flag = 0;
+    // #### critical section ####
+    while (flag == 0) {
+        ch = getchar();
+        printf("Waiting for peer proccess:\n");
+
+        /* Wait for 'sem1' to be posted by peer before touching
+            shared memory. */
+        if (sem_wait(&shmp->wb) == -1)
+            errExit("sem_wait");
+        sem_trywait(&shmp->wa); // lock writer b as well (evil)
+
+
+        printf("Ready:\n");
+
+
+        shmp->pos = 0;
+        for (size_t j = 0; j < shmp->cnt; j++){
+            
+            if (ch == EOF) {
+                flag = 1;
+                break;
+            }
+            shmp->buf[j] = ch;
+            shmp->pos++;
+            if (ch == '\n') {
+                break;
+            }
+            if (j < shmp->cnt - 1) {
+                ch = getchar();
+            }
+        }
+    
+        // give the programm to the other person
+        if (sem_post(&shmp->ra) == -1) 
+            errExit("sem_post");
+    }
+
+    // a final routine to end the communication
+    if (sem_wait(&shmp->wb) == -1)
+        errExit("sem_wait");
+    
+    shmp->buf[0] = EOF;
+
+    if(sem_post(&shmp->ra) == -1)
+        errExit("sem_post");
+
+    return 0;
+}
+
 void * reader_func_b(void * memseg) {
+    printf("reader b is running\n");
     struct shmbuf *shmp = memseg;
 
     int flag = 0;
@@ -109,10 +187,14 @@ void * reader_func_b(void * memseg) {
         if (shmp->buf[0] == EOF) {
             flag = 1;
         }
+        int fl = 0;
         if (shmp->pos != 0) {
             //write(STDOUT_FILENO, &shmp->buf, len);
             for (int j = 0; j < shmp->pos; j++) {
                 printf("%c", shmp->buf[j]);
+                if (shmp->buf[j] == '\n') {
+                    fl = 1;
+                }
             }
             //printf("\n");
             //write(STDOUT_FILENO, "\n", 1);
@@ -120,6 +202,12 @@ void * reader_func_b(void * memseg) {
 
         if (sem_post(&shmp->wa) == -1)
             errExit("sem_post");
+        if (fl == 1) {
+            sem_post(&shmp->wb);
+        }
     }
+    shmp->pos = 1;
+    if (sem_post(&shmp->wb) == -1)
+        errExit("sem_post");
     return 0;
 }
