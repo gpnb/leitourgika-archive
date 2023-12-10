@@ -176,7 +176,7 @@ void * reader_func_a(void * memseg) {
     struct shmbuf *shmp = memseg;
 
     int flag = 0;
-    while (flag == 0) {
+    while (flag == 0) { // not over 
         //printf("waitng for peer proccess to print\n");
 
         /* Wait until peer says that it has finished accessing
@@ -188,6 +188,19 @@ void * reader_func_a(void * memseg) {
         /* Write modified data in shared memory to standard output. */
         if (shmp->buf[0] == EOF) {
             flag = 1;
+        }
+        char endc[5] = "#BYE#";
+        int k = 0;
+        for (int j = 0; j < shmp->pos; j++) {
+            if (shmp->buf[j] == endc[k]) {
+                k++;
+            }
+            else {
+                k = 0;
+            }
+            if (k == 5) {
+                printf("found end string\n");
+            }
         }
         int fl = 0;
         if (shmp->pos != 0) {
