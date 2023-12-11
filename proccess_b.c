@@ -8,19 +8,14 @@ void * writer_func_b(void * memseg);
 void * reader_func_b(void * memseg);
 
 void metadata_printer(struct metadata * met) {
-    printf("sent:             %d\n", met->sent);
-    printf("received:         %d\n", met->rec);
-    printf("packages:         %d\n", met->pack);
-    printf("average per mess: %f\n", met->pack / (float)met->rec);
-    printf("average time:     %f\n", met->avrg_time);
+    printf("messages sent:                                      %d\n", met->sent);
+    printf("messages received:                                  %d\n", met->rec);
+    printf("packages received:                                  %d\n", met->pack);
+    printf("average package count per message received:         %f\n", met->pack / (float)met->rec);
+    printf("average wait time for first package of new message: %f\n", met->avrg_time);
 }
 
 int main(int argc, char *argv[]) {
-    /*######################
-    #                      #
-    #  FUNCTION NECESERYS  #
-    #                      #
-    ######################*/
     int            fd;
     char           *shmpath;
     struct shmbuf  *shmp;
@@ -44,11 +39,7 @@ int main(int argc, char *argv[]) {
     //printf("Shared memory object \"%s\" has been created at address\"%p\"\n", shmpath, shmp);
 
     close(fd);
-    /*#################
-    #                 #
-    #  END NECESERYS  #
-    #                 #
-    #################*/
+
 
     // CREATING READER AND WRITER THREADS
     int res;

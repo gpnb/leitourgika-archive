@@ -8,11 +8,11 @@ void * writer_func_a(void * memseg);
 void * reader_func_a(void * memseg);
 
 void metadata_printer(struct metadata * met) {
-    printf("sent:             %d\n", met->sent);
-    printf("received:         %d\n", met->rec);
-    printf("packages:         %d\n", met->pack);
-    printf("average per mess: %f\n", met->pack / (float)met->rec);
-    printf("average time:     %f\n", met->avrg_time);
+    printf("messages sent:                                      %d\n", met->sent);
+    printf("messages received:                                  %d\n", met->rec);
+    printf("packages received:                                  %d\n", met->pack);
+    printf("average package count per message received:         %f\n", met->pack / (float)met->rec);
+    printf("average wait time for first package of new message: %f\n", met->avrg_time);
 }
 
 int main(int argc, char *argv[]) {
@@ -73,7 +73,8 @@ int main(int argc, char *argv[]) {
     
     if (sem_post(&shmp->wb) == -1)
         errExit("sem_post");
-    //printf("In linux, EOF is CTRL+D\n");
+    printf("Both proccesses end with EOF\n");
+    printf("In linux, EOF is CTRL+D\n");
 
 
     // CREATE WRITER AND READER THREADS
@@ -106,11 +107,8 @@ int main(int argc, char *argv[]) {
         perror("Thread join failed");
         exit(EXIT_FAILURE);
     }
-    //printf("Thread joined, it returned '%s'\n", (char *)thread_result);
-    printf("Thread was successfull!!!\n");
 
-
-
+    // FINISHING THE FUNCTION
     printf("#### END OF PROCCESS ####\n");
 
     metadata_printer(thread_result2);
