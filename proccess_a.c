@@ -175,11 +175,16 @@ void * writer_func_a(void * memseg) {
 // don't you love copy-paste?
 void * reader_func_a(void * memseg) {
     struct shmbuf *shmp = memseg;
+    time_t t = 0;
+    printf("time is %ld\n",t);
+    time_t tim = 0;
 
     int flag = 0;
     int initer = 1;
     char temp[1024];
     int tpos;
+    int messagenum = 0;
+    int packnum = 0;
     while (flag == 0) { // not over
         if (sem_wait(&shmp->ra) == -1)
             errExit("sem_wait");
@@ -210,10 +215,13 @@ void * reader_func_a(void * memseg) {
         }
         if (initer == 1) {
             printf("PROCB >>    ");
+            messagenum++;
             initer = 0;
+            if (t != 0) tim += time(NULL)-t;
         }
         int fl = 0;
         if (shmp->pos != 0) {
+            packnum++;
             for (int j = 0; j < shmp->pos; j++) {
                 //printf("%c", shmp->buf[j]);
                 temp[tpos] = shmp->buf[j];
@@ -221,6 +229,7 @@ void * reader_func_a(void * memseg) {
                 if (shmp->buf[j] == '\n') {
                     fl = 1;
                     initer = 1;
+                    t = time(NULL);
                 }
             }
         }
@@ -239,8 +248,17 @@ void * reader_func_a(void * memseg) {
         }
     }
     shmp->pos = 1;
+    
+    float average_pack = packnum/(float)messagenum;
+    printf("received %d messages.\n", messagenum);
+    printf("received %d packages.\n", packnum);
+    printf("average num of packages: %f\n", average_pack);
+    printf("time in seconds: %ld\n", tim);
+    float average_time = tim / (float)(messagenum-1); 
+    printf("average time is %f\n", average_time);
+    printf("reader a ded\n");
+
     if (sem_post(&shmp->rb) == -1)
         errExit("sem_post");
-    printf("reader a ded\n");
     return 0;
 }
