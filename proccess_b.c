@@ -175,6 +175,8 @@ void * reader_func_b(void * memseg) {
 
     int flag = 0;
     int initer = 1;
+    char temp[1024];
+    int tpos = 0;
     while (flag == 0) {
         if (sem_wait(&shmp->rb) == -1)
             errExit("sem_wait");
@@ -209,12 +211,21 @@ void * reader_func_b(void * memseg) {
         int fl = 0;
         if (shmp->pos != 0) {
             for (int j = 0; j < shmp->pos; j++) {
-                printf("%c", shmp->buf[j]);
+                //printf("%c", shmp->buf[j]);
+                temp[tpos] = shmp->buf[j];
+                tpos++;
                 if (shmp->buf[j] == '\n') {
                     fl = 1;
                     initer = 1;
                 }
             }
+        }
+
+        if (fl == 1) {
+            for(int k = 0; k < tpos; k++) {
+                printf("%c", temp[k]);
+            }
+            tpos = 0;
         }
 
         if (sem_post(&shmp->wa) == -1)
