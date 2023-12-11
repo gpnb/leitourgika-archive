@@ -10,6 +10,7 @@ void metadata_printer(struct metadata * met) {
     printf("packages received:                                  %d\n", met->pack);
     if (met->rec == 0) return;
     printf("average package count per message received:         %f\n", met->pack / (float)met->rec);
+    if (met->rec == 1) return;
     printf("average wait time for first package of new message: %f\n", met->avrg_time);
 }
 
