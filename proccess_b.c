@@ -47,22 +47,23 @@ main(int argc, char *argv[])
     if (shmp == MAP_FAILED)
         errExit("mmap");
 
-    printf("Shared memory object \"%s\" has been created at address\"%p\"\n", shmpath, shmp);
+    //printf("Shared memory object \"%s\" has been created at address\"%p\"\n", shmpath, shmp);
 
     close(fd);          /* 'fd' is no longer needed */
 
 
     //#### critical section begin ####
 
-    printf("waiting for peer proccess:\n");
+    //printf("waiting for peer proccess:\n");
 
     if (sem_wait(&shmp->rb) == -1)
         errExit("sem_wait");
 
-    printf("Ready (writing esssential data)\n");
+    //printf("Ready (writing esssential data)\n");
     /* Copy data into the shared memory object. */
 
     shmp->cnt = len;
+    shmp->term = 0;
     memcpy(&shmp->buf, string, len);
 
     // go back to the other proccess
@@ -92,13 +93,12 @@ main(int argc, char *argv[])
     }
 
 
-    sleep(5);
-    printf("waiting for thread to finish...\n");
     res = pthread_join(reader_b, &thread_result);
     if (res != 0) {
         perror("Thread join failed");
         exit(EXIT_FAILURE);
     }
+    pthread_cancel(writer_b);
     res2 = pthread_join(writer_b, &thread_result2);
     if (res2 != 0) {
         perror("Thread join failed");
@@ -113,7 +113,6 @@ main(int argc, char *argv[])
 }
 
 void * writer_func_b(void * memseg) {
-    printf("writer b is running\n");
     struct shmbuf  *shmp = memseg;
 
 
@@ -123,7 +122,6 @@ void * writer_func_b(void * memseg) {
     // #### critical section ####
     while (flag == 0) {
         ch = getchar();
-        printf("Waiting for peer proccess:\n");
 
         /* Wait for 'sem1' to be posted by peer before touching
             shared memory. */
@@ -131,8 +129,10 @@ void * writer_func_b(void * memseg) {
             errExit("sem_wait");
         sem_trywait(&shmp->wa); // lock writer b as well (evil)
 
-
-        printf("Ready:\n");
+        if (shmp->term == 1) {
+            flag = 1;
+            break;
+        }
 
 
         shmp->pos = 0;
@@ -158,46 +158,63 @@ void * writer_func_b(void * memseg) {
     }
 
     // a final routine to end the communication
-    if (sem_wait(&shmp->wb) == -1)
-        errExit("sem_wait");
+    // if (sem_wait(&shmp->wb) == -1)
+    //     errExit("sem_wait");
     
     shmp->buf[0] = EOF;
 
     if(sem_post(&shmp->ra) == -1)
         errExit("sem_post");
 
+    printf("writer b ded\n");
     return 0;
 }
 
 void * reader_func_b(void * memseg) {
-    printf("reader b is running\n");
     struct shmbuf *shmp = memseg;
 
     int flag = 0;
+    int initer = 1;
     while (flag == 0) {
-        //printf("waitng for peer proccess to print\n");
-
-        /* Wait until peer says that it has finished accessing
-        the shared memory. */
-
         if (sem_wait(&shmp->rb) == -1)
             errExit("sem_wait");
+        
+        if (shmp->term == 1) {
+            flag = 1;
+            break;
+        }
 
-        /* Write modified data in shared memory to standard output. */
         if (shmp->buf[0] == EOF) {
             flag = 1;
         }
+        char endc[5] = "#BYE#";
+        int k = 0;
+        for (int j = 0; j < shmp->pos; j++) {
+            if (shmp->buf[j] == endc[k]) {
+                k++;
+            }
+            else {
+                k = 0;
+            }
+            if (k == 5) {
+                printf("found end string\n");
+                flag = 1;
+                shmp->term = 1;
+            }
+        }
+        if (initer == 1) {
+            printf("PROCA >>    ");
+            initer = 0;
+        }
         int fl = 0;
         if (shmp->pos != 0) {
-            //write(STDOUT_FILENO, &shmp->buf, len);
             for (int j = 0; j < shmp->pos; j++) {
                 printf("%c", shmp->buf[j]);
                 if (shmp->buf[j] == '\n') {
                     fl = 1;
+                    initer = 1;
                 }
             }
-            //printf("\n");
-            //write(STDOUT_FILENO, "\n", 1);
         }
 
         if (sem_post(&shmp->wa) == -1)
@@ -207,7 +224,8 @@ void * reader_func_b(void * memseg) {
         }
     }
     shmp->pos = 1;
-    if (sem_post(&shmp->wb) == -1)
+    if (sem_post(&shmp->ra) == -1)
         errExit("sem_post");
+    printf("reader b ded\n");
     return 0;
 }

@@ -20,6 +20,7 @@ struct shmbuf {
     sem_t  wb;            /* POSIX unnamed semaphore */
     sem_t  ra;              // semaphore for reader thread in proccess a
     sem_t  rb;              // semaphore for reader thread in proccess b
+    int    term;
     int    pos;
     size_t cnt;             /* Number of bytes used in 'buf' */
     char   buf[BUF_SIZE];   /* Data being transferred */
