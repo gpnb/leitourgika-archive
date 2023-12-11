@@ -89,7 +89,6 @@ main(int argc, char *argv[])
         perror("Thread join failed");
         exit(EXIT_FAILURE);
     }
-    printf("sending back char\n");
     pthread_cancel(writer_a);
     res = pthread_join(writer_a, &thread_result);
     if (res != 0) {
@@ -99,6 +98,14 @@ main(int argc, char *argv[])
     printf("Thread was successfull!!!\n");
     //exit(EXIT_SUCCESS);
 
+    printf("#### END OF PROCCESS ####\n");
+
+    struct metadata *met = thread_result2;
+    printf("sent:             %d\n", met->sent);
+    printf("received:         %d\n", met->rec);
+    printf("packages:         %d\n", met->pack);
+    printf("average per mess: %f\n", met->pack / (float)met->rec);
+    printf("average time:     %f\n", met->avrg_time);
 
 
 
@@ -108,7 +115,7 @@ main(int argc, char *argv[])
 
     shm_unlink(shmpath);
 
-    printf("#### END OF PROCCESS ####\n");
+    // printf("#### END OF PROCCESS ####\n");
 
     exit(EXIT_SUCCESS);
 }
@@ -250,16 +257,27 @@ void * reader_func_a(void * memseg) {
     shmp->pos = 1;
     int sent = shmp->ma;
     
-    float average_pack = packnum/(float)messagenum;
-    printf("received %d messages.\n", messagenum);
-    printf("sent %d packages.\n", sent);
-    printf("received %d packages.\n", packnum);
-    printf("average num of packages: %f\n", average_pack);
+    //float average_pack = packnum/(float)messagenum;
+    // printf("received %d messages.\n", messagenum);
+    // printf("sent %d packages.\n", sent);
+    // printf("received %d packages.\n", packnum);
+    // printf("average num of packages: %f\n", average_pack);
     float average_time = tim / (float)(messagenum-1); 
-    printf("average time is %f\n", average_time);
-    printf("reader a ded\n");
+    if (messagenum < 2) {
+        average_time = 0;
+    }
+    // printf("average time is %f\n", average_time);
+    // printf("reader a ded\n");
+
+    struct metadata *met = malloc(sizeof(struct metadata));
+    met->avrg_time = average_time;
+    met->pack = packnum;
+    met->rec = messagenum;
+    met->sent = sent;
+    
 
     if (sem_post(&shmp->rb) == -1)
         errExit("sem_post");
-    return 0;
+    
+    pthread_exit(met);
 }

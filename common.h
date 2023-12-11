@@ -28,3 +28,10 @@ struct shmbuf {
     size_t cnt;             /* Number of bytes used in 'buf' */
     char   buf[BUF_SIZE];   /* Data being transferred */
 };
+
+struct metadata {
+    int rec;
+    int sent;
+    int pack;
+    float avrg_time;
+};
