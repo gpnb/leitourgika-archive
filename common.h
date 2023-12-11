@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <time.h>
+#include <pthread.h>
 
 #define errExit(msg)    do { perror(msg); exit(EXIT_FAILURE); \
                         } while (0)
@@ -18,12 +19,12 @@
     memory object */
 
 struct shmbuf {
-    sem_t  wa;            /* POSIX unnamed semaphore */
-    sem_t  wb;            /* POSIX unnamed semaphore */
+    sem_t  wa;              // semaphore for writer thread in proccess a
+    sem_t  wb;              // semaphore for writer thread in proccess b
     sem_t  ra;              // semaphore for reader thread in proccess a
     sem_t  rb;              // semaphore for reader thread in proccess b
-    int    term;
-    int    pos;
+    int    term;            // program termination flag shared between all threads
+    int    pos;             // position of buffer, up to which a proccess has writen 
     int    ma;              // number of messages sent by proccess a
     int    mb;              // number of messages sent by proccess b
     size_t cnt;             /* Number of bytes used in 'buf' */

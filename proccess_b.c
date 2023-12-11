@@ -1,6 +1,3 @@
-#include <string.h>
-#include <pthread.h>
-
 #include "common.h"
 
 void * writer_func_b(void * memseg);
@@ -11,6 +8,7 @@ void metadata_printer(struct metadata * met) {
     printf("messages sent:                                      %d\n", met->sent);
     printf("messages received:                                  %d\n", met->rec);
     printf("packages received:                                  %d\n", met->pack);
+    if (met->rec == 0) return;
     printf("average package count per message received:         %f\n", met->pack / (float)met->rec);
     printf("average wait time for first package of new message: %f\n", met->avrg_time);
 }
@@ -36,12 +34,10 @@ int main(int argc, char *argv[]) {
     if (shmp == MAP_FAILED)
         errExit("mmap");
 
-    //printf("Shared memory object \"%s\" has been created at address\"%p\"\n", shmpath, shmp);
-
     close(fd);
 
 
-    // CREATING READER AND WRITER THREADS
+    // CREATE READER AND WRITER THREADS
     int res;
     pthread_t reader_b;
     void *thread_result;
@@ -59,7 +55,7 @@ int main(int argc, char *argv[]) {
     }
 
 
-    // ENDING THREADS
+    // END THREADS
     res = pthread_join(reader_b, &thread_result);
     if (res != 0) {
         perror("Thread join failed");
@@ -74,7 +70,7 @@ int main(int argc, char *argv[]) {
     printf("Thread was successfull!!!\n");
 
 
-    // FINISHING THE FUNCTION
+    // FINISH THE FUNCTION
     printf("#### END OF PROCCESS ####\n");
 
     metadata_printer(thread_result);
@@ -108,7 +104,7 @@ void * writer_func_b(void * memseg) {
 
         if (sem_wait(&shmp->wb) == -1)
             errExit("sem_wait");
-        sem_trywait(&shmp->wa); // lock writer a as well (evil)
+        sem_trywait(&shmp->wa); // lock writer a as well
 
         shmp->pos = 0;
         for (size_t j = 0; j < shmp->cnt; j++){
@@ -183,7 +179,6 @@ void * reader_func_b(void * memseg) {
         if (shmp->pos != 0) {
             packnum++;
             for (int j = 0; j < shmp->pos; j++) {
-                //printf("%c", shmp->buf[j]);
                 temp[tpos] = shmp->buf[j];
                 tpos++;
                 if (shmp->buf[j] == '\n') {
@@ -194,7 +189,7 @@ void * reader_func_b(void * memseg) {
             }
         }
 
-        if (message_end == 1) { // if end of message
+        if (message_end == 1) { // end of message
             for(int k = 0; k < tpos; k++) {
                 printf("%c", temp[k]);
             }

@@ -1,6 +1,3 @@
-#include <ctype.h>
-#include <pthread.h>
-
 #include "common.h"
 
 void * writer_func_a(void * memseg);
@@ -11,6 +8,7 @@ void metadata_printer(struct metadata * met) {
     printf("messages sent:                                      %d\n", met->sent);
     printf("messages received:                                  %d\n", met->rec);
     printf("packages received:                                  %d\n", met->pack);
+    if (met->rec == 0) return;
     printf("average package count per message received:         %f\n", met->pack / (float)met->rec);
     printf("average wait time for first package of new message: %f\n", met->avrg_time);
 }
@@ -73,6 +71,8 @@ int main(int argc, char *argv[]) {
     
     if (sem_post(&shmp->wb) == -1)
         errExit("sem_post");
+
+    // message for user
     printf("Both proccesses end with EOF\n");
     printf("In linux, EOF is CTRL+D\n");
 
@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    // FINISHING THE FUNCTION
+    // FINISH THE FUNCTION
     printf("#### END OF PROCCESS ####\n");
 
     metadata_printer(thread_result2);
@@ -128,7 +128,7 @@ void * writer_func_a(void * memseg) {
 
         if (sem_wait(&shmp->wa) == -1)
             errExit("sem_wait");
-        sem_trywait(&shmp->wb); // lock writer b as well (evil)
+        sem_trywait(&shmp->wb); // lock writer b as well
 
         shmp->pos = 0;
         for (size_t j = 0; j < shmp->cnt; j++){
@@ -213,12 +213,12 @@ void * reader_func_a(void * memseg) {
             }
         }
 
-        if (message_end == 1) { // if end of message
+        if (message_end == 1) { // end of message
             for (int k = 0; k < tpos; k++) {
                 printf("%c", temp[k]);
             }
             tpos = 0;
-            sem_post(&shmp->wa);
+            sem_post(&shmp->wa); // when the message has ended, enable both writers
         }
 
         if (sem_post(&shmp->wb) == -1)
