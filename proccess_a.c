@@ -132,11 +132,6 @@ void * writer_func_a(void * memseg) {
             errExit("sem_wait");
         sem_trywait(&shmp->wb); // lock writer b as well (evil)
 
-        if (shmp->term == 1) {
-            flag = 1;
-            break;
-        }
-
         shmp->pos = 0;
         for (size_t j = 0; j < shmp->cnt; j++){
             
@@ -155,7 +150,6 @@ void * writer_func_a(void * memseg) {
             }
         }
     
-        // give the programm to the other person
         if (sem_post(&shmp->rb) == -1) 
             errExit("sem_post");
     }
@@ -164,8 +158,7 @@ void * writer_func_a(void * memseg) {
         errExit("sem_wait");
     
     shmp->pos = 5;
-    char *endm = "#BYE#\0";
-    memcpy(&shmp->buf, endm, 5);
+    memcpy(&shmp->buf, ENDSTR, 5);
     for(int i = 5; i < 15; i++){
         shmp->buf[i] = '\0';
     }
@@ -187,77 +180,53 @@ void * reader_func_a(void * memseg) {
     int tpos;
     int messagenum = 0;
     int packnum = 0;
-    while (flag == 0) { // not over
+    while (flag == 0) {
         if (sem_wait(&shmp->ra) == -1)
             errExit("sem_wait");
 
-        if (shmp->term == 1) {
+        if (shmp->term == 1) { // terminate the proccesses
             flag = 1;
             break;
         }
-
-        if (shmp->buf[0] == EOF) {
-            flag = 1;
-        }
-        // char endc[5] = "#BYE#";
-        // int k = 0;
-        // for (int j = 0; j < shmp->pos; j++) {
-        //     if (shmp->buf[j] == endc[k]) {
-        //         k++;
-        //     }
-        //     else {
-        //         k = 0;
-        //     }
-        //     if (k == 5) {
-        //         printf("found end string\n");
-        //         flag = 1;
-        //         shmp->term = 1;
-        //         break;
-        //     }
-        // }
-        char * endm ="#BYE#\0";
-        if (strcmp(shmp->buf, endm) == 0){
+        
+        if (strcmp(shmp->buf, ENDSTR) == 0){
             flag = 1;
             shmp->term = 1;
             break;
         }
-        
-        if (initer == 1) {
+
+        if (initer == 1 && shmp->pos != 0) { // beggining of new message
             printf("PROCB >>    ");
             messagenum++;
             initer = 0;
             if (t != 0) tim += time(NULL)-t;
         }
-        int fl = 0;
+        int message_end = 0;
         if (shmp->pos != 0) {
             packnum++;
             for (int j = 0; j < shmp->pos; j++) {
-                //printf("%c", shmp->buf[j]);
                 temp[tpos] = shmp->buf[j];
                 tpos++;
                 if (shmp->buf[j] == '\n') {
-                    fl = 1;
+                    message_end = 1;
                     initer = 1;
                     t = time(NULL);
                 }
             }
         }
 
-        if (fl == 1) {
+        if (message_end == 1) { // if end of message
             for (int k = 0; k < tpos; k++) {
                 printf("%c", temp[k]);
             }
             tpos = 0;
+            sem_post(&shmp->wa);
         }
 
         if (sem_post(&shmp->wb) == -1)
             errExit("sem_post");
-        if (fl == 1) {
-            sem_post(&shmp->wa);
-        }
     }
-    shmp->pos = 1;
-    
+
     float average_time = tim / (float)(messagenum-1); 
 
     struct metadata *met = malloc(sizeof(struct metadata));

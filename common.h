@@ -12,6 +12,7 @@
                         } while (0)
 
 #define BUF_SIZE 15   /* Maximum size for exchanged string */
+#define ENDSTR "#BYE#"
 
 /* Define a structure that will be imposed on the shared
     memory object */
