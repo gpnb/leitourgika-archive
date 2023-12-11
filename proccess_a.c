@@ -11,6 +11,14 @@ void * writer_func_a(void * memseg);
 
 void * reader_func_a(void * memseg);
 
+void metadata_printer(struct metadata * met) {
+    printf("sent:             %d\n", met->sent);
+    printf("received:         %d\n", met->rec);
+    printf("packages:         %d\n", met->pack);
+    printf("average per mess: %f\n", met->pack / (float)met->rec);
+    printf("average time:     %f\n", met->avrg_time);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -100,24 +108,9 @@ main(int argc, char *argv[])
 
     printf("#### END OF PROCCESS ####\n");
 
-    struct metadata *met = thread_result2;
-    printf("sent:             %d\n", met->sent);
-    printf("received:         %d\n", met->rec);
-    printf("packages:         %d\n", met->pack);
-    printf("average per mess: %f\n", met->pack / (float)met->rec);
-    printf("average time:     %f\n", met->avrg_time);
+    metadata_printer(thread_result2);
 
-    free(met);
-
-
-
-    /* Unlink the shared memory object. Even if the peer process
-        is still using the object, this is okay. The object will
-        be removed only after all open references are closed. */
-
-    shm_unlink(shmpath);
-
-    // printf("#### END OF PROCCESS ####\n");
+    free(thread_result2);
 
     exit(EXIT_SUCCESS);
 }

@@ -11,6 +11,14 @@ void * writer_func_b(void * memseg);
 
 void * reader_func_b(void * memseg);
 
+void metadata_printer(struct metadata * met) {
+    printf("sent:             %d\n", met->sent);
+    printf("received:         %d\n", met->rec);
+    printf("packages:         %d\n", met->pack);
+    printf("average per mess: %f\n", met->pack / (float)met->rec);
+    printf("average time:     %f\n", met->avrg_time);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -26,8 +34,6 @@ main(int argc, char *argv[])
 
     shmpath = argv[1];
     string = "no";
-    //string = argv[2];
-    //len = strlen(string);
     len = 15;
 
     //if (len > BUF_SIZE) {
@@ -110,14 +116,16 @@ main(int argc, char *argv[])
 
     printf("#### END OF PROCCESS ####\n");
 
-    struct metadata *met = thread_result;
-    printf("sent:             %d\n", met->sent);
-    printf("received:         %d\n", met->rec);
-    printf("packages:         %d\n", met->pack);
-    printf("average per mess: %f\n", met->pack / (float)met->rec);
-    printf("average time:     %f\n", met->avrg_time);
+    // struct metadata *met = thread_result;
+    // printf("sent:             %d\n", met->sent);
+    // printf("received:         %d\n", met->rec);
+    // printf("packages:         %d\n", met->pack);
+    // printf("average per mess: %f\n", met->pack / (float)met->rec);
+    // printf("average time:     %f\n", met->avrg_time);
 
-    free(met);
+    metadata_printer(thread_result);
+
+    free(thread_result);
 
 
     sem_close(&shmp->wa);
@@ -128,6 +136,8 @@ main(int argc, char *argv[])
     sem_destroy(&shmp->wb);
     sem_destroy(&shmp->ra);
     sem_destroy(&shmp->rb);
+
+    shm_unlink(shmpath);
 
     // write(STDOUT_FILENO, "#### END OF PROCCESS ####\n", 26);
 
