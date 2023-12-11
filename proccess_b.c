@@ -116,13 +116,6 @@ main(int argc, char *argv[])
 
     printf("#### END OF PROCCESS ####\n");
 
-    // struct metadata *met = thread_result;
-    // printf("sent:             %d\n", met->sent);
-    // printf("received:         %d\n", met->rec);
-    // printf("packages:         %d\n", met->pack);
-    // printf("average per mess: %f\n", met->pack / (float)met->rec);
-    // printf("average time:     %f\n", met->avrg_time);
-
     metadata_printer(thread_result);
 
     free(thread_result);
