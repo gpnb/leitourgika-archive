@@ -108,6 +108,17 @@ main(int argc, char *argv[])
     }
     printf("Thread was successfull!!!\n");
 
+    printf("#### END OF PROCCESS ####\n");
+
+    struct metadata *met = thread_result;
+    printf("sent:             %d\n", met->sent);
+    printf("received:         %d\n", met->rec);
+    printf("packages:         %d\n", met->pack);
+    printf("average per mess: %f\n", met->pack / (float)met->rec);
+    printf("average time:     %f\n", met->avrg_time);
+
+    free(met);
+
 
     sem_close(&shmp->wa);
     sem_close(&shmp->wb);
@@ -118,7 +129,7 @@ main(int argc, char *argv[])
     sem_destroy(&shmp->ra);
     sem_destroy(&shmp->rb);
 
-    write(STDOUT_FILENO, "#### END OF PROCCESS ####\n", 26);
+    // write(STDOUT_FILENO, "#### END OF PROCCESS ####\n", 26);
 
     exit(EXIT_SUCCESS);
 }
@@ -256,18 +267,17 @@ void * reader_func_b(void * memseg) {
         }
     }
     shmp->pos = 1;
-    int sent = shmp->mb;
     
-    float average_pack = packnum/(float)messagenum;
-    printf("received %d messages.\n", messagenum);
-    printf("sent %d packages.\n", sent);
-    printf("received %d packages.\n", packnum);
-    printf("average num of packages: %f\n", average_pack);
+    
     float average_time = tim / (float)(messagenum-1); 
-    printf("average time is %f\n", average_time);
-    printf("reader b ded\n");
+    
+    struct metadata *met = malloc(sizeof(struct metadata));
+    met->avrg_time = average_time;
+    met->pack = packnum;
+    met->rec = messagenum;
+    met->sent = shmp->mb;
 
     if (sem_post(&shmp->ra) == -1)
         errExit("sem_post");
-    return 0;
+    pthread_exit(met);
 }
