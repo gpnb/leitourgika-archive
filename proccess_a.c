@@ -1,7 +1,3 @@
-/* pshm_ucase_bounce.c
-
-    Licensed under GNU General Public License v2 or later.
-*/
 #include <ctype.h>
 #include <pthread.h>
 
@@ -19,9 +15,7 @@ void metadata_printer(struct metadata * met) {
     printf("average time:     %f\n", met->avrg_time);
 }
 
-int
-main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     /*###################
     #                   #
     #  INITIALIZATIONS  #
@@ -79,7 +73,7 @@ main(int argc, char *argv[])
     
     if (sem_post(&shmp->wb) == -1)
         errExit("sem_post");
-    //printf("remember, eof is ctlr+d\n");
+    //printf("In linux, EOF is CTRL+D\n");
 
 
     // CREATE WRITER AND READER THREADS
@@ -91,19 +85,18 @@ main(int argc, char *argv[])
         perror("Thread creation failed");
         exit(EXIT_FAILURE);
     }
-    int res2;
     pthread_t reader_a;
     void *thread_result2;
-    res2 = pthread_create(&reader_a, NULL, reader_func_a, (void *)shmp);
-    if (res2 != 0) {
+    res = pthread_create(&reader_a, NULL, reader_func_a, (void *)shmp);
+    if (res != 0) {
         perror("Thread creation failed");
         exit(EXIT_FAILURE);
     }    
 
     
     // END THREADS
-    res2 = pthread_join(reader_a, &thread_result2);
-    if (res2 != 0) {
+    res = pthread_join(reader_a, &thread_result2);
+    if (res != 0) {
         perror("Thread join failed");
         exit(EXIT_FAILURE);
     }
@@ -113,6 +106,7 @@ main(int argc, char *argv[])
         perror("Thread join failed");
         exit(EXIT_FAILURE);
     }
+    //printf("Thread joined, it returned '%s'\n", (char *)thread_result);
     printf("Thread was successfull!!!\n");
 
 
@@ -126,20 +120,14 @@ main(int argc, char *argv[])
     exit(EXIT_SUCCESS);
 }
 
-
 void * writer_func_a(void * memseg) {
     struct shmbuf  *shmp = memseg;
 
-
-
     char ch;
     int flag = 0;
-    // #### critical section ####
     while (flag == 0) {
         ch = getchar();
 
-        /* Wait for 'sem1' to be posted by peer before touching
-            shared memory. */
         if (sem_wait(&shmp->wa) == -1)
             errExit("sem_wait");
         sem_trywait(&shmp->wb); // lock writer b as well (evil)
@@ -148,7 +136,6 @@ void * writer_func_a(void * memseg) {
             flag = 1;
             break;
         }
-
 
         shmp->pos = 0;
         for (size_t j = 0; j < shmp->cnt; j++){
@@ -173,20 +160,22 @@ void * writer_func_a(void * memseg) {
             errExit("sem_post");
     }
 
-    // a final routine to end the communication
-    // if (sem_wait(&shmp->wa) == -1)
-    //     errExit("sem_wait");
+    if (sem_wait(&shmp->wa) == -1)
+        errExit("sem_wait");
     
-    shmp->buf[0] = EOF;
+    shmp->pos = 5;
+    char *endm = "#BYE#\0";
+    memcpy(&shmp->buf, endm, 5);
+    for(int i = 5; i < 15; i++){
+        shmp->buf[i] = '\0';
+    }
 
-    if(sem_post(&shmp->rb) == -1)
+    if (sem_post(&shmp->rb) == -1)
         errExit("sem_post");
 
-    printf("writer a ded\n");
-    return 0;
+    pthread_exit("exited");
 }
 
-// don't you love copy-paste?
 void * reader_func_a(void * memseg) {
     struct shmbuf *shmp = memseg;
     time_t t = 0;
@@ -210,22 +199,29 @@ void * reader_func_a(void * memseg) {
         if (shmp->buf[0] == EOF) {
             flag = 1;
         }
-        char endc[5] = "#BYE#";
-        int k = 0;
-        for (int j = 0; j < shmp->pos; j++) {
-            if (shmp->buf[j] == endc[k]) {
-                k++;
-            }
-            else {
-                k = 0;
-            }
-            if (k == 5) {
-                printf("found end string\n");
-                flag = 1;
-                shmp->term = 1;
-                break;
-            }
+        // char endc[5] = "#BYE#";
+        // int k = 0;
+        // for (int j = 0; j < shmp->pos; j++) {
+        //     if (shmp->buf[j] == endc[k]) {
+        //         k++;
+        //     }
+        //     else {
+        //         k = 0;
+        //     }
+        //     if (k == 5) {
+        //         printf("found end string\n");
+        //         flag = 1;
+        //         shmp->term = 1;
+        //         break;
+        //     }
+        // }
+        char * endm ="#BYE#\0";
+        if (strcmp(shmp->buf, endm) == 0){
+            flag = 1;
+            shmp->term = 1;
+            break;
         }
+        
         if (initer == 1) {
             printf("PROCB >>    ");
             messagenum++;
