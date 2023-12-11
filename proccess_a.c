@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
     }
 
     // FINISH THE FUNCTION
-    printf("#### END OF PROCCESS ####\n");
+    printf("#### END OF PROCESS ####\n");
 
     metadata_printer(thread_result2);
 

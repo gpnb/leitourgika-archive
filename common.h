@@ -19,14 +19,14 @@
     memory object */
 
 struct shmbuf {
-    sem_t  wa;              // semaphore for writer thread in proccess a
-    sem_t  wb;              // semaphore for writer thread in proccess b
-    sem_t  ra;              // semaphore for reader thread in proccess a
-    sem_t  rb;              // semaphore for reader thread in proccess b
+    sem_t  wa;              // semaphore for writer thread in process a
+    sem_t  wb;              // semaphore for writer thread in process b
+    sem_t  ra;              // semaphore for reader thread in process a
+    sem_t  rb;              // semaphore for reader thread in process b
     int    term;            // program termination flag shared between all threads
     int    pos;             // position of buffer, up to which a proccess has writen 
-    int    ma;              // number of messages sent by proccess a
-    int    mb;              // number of messages sent by proccess b
+    int    ma;              // number of messages sent by process a
+    int    mb;              // number of messages sent by process b
     size_t cnt;             /* Number of bytes used in 'buf' */
     char   buf[BUF_SIZE];   /* Data being transferred */
 };

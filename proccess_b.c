@@ -67,11 +67,10 @@ int main(int argc, char *argv[]) {
         perror("Thread join failed");
         exit(EXIT_FAILURE);
     }
-    printf("Thread was successfull!!!\n");
 
 
     // FINISH THE FUNCTION
-    printf("#### END OF PROCCESS ####\n");
+    printf("#### END OF PROCESS ####\n");
 
     metadata_printer(thread_result);
 
