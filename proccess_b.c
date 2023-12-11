@@ -23,8 +23,7 @@ int
 main(int argc, char *argv[])
 {
     int            fd;
-    char           *shmpath, *string;
-    size_t         len;
+    char           *shmpath;
     struct shmbuf  *shmp;
 
     if (argc != 2) {
@@ -33,16 +32,6 @@ main(int argc, char *argv[])
     }
 
     shmpath = argv[1];
-    string = "no";
-    len = 15;
-
-    //if (len > BUF_SIZE) {
-    //    fprintf(stderr, "String is too long\n");
-    //    exit(EXIT_FAILURE);
-    //}
-
-    /* Open the existing shared memory object and map it
-        into the caller's address space. */
 
     fd = shm_open(shmpath, O_RDWR, 0);
     if (fd == -1)
@@ -56,31 +45,6 @@ main(int argc, char *argv[])
     //printf("Shared memory object \"%s\" has been created at address\"%p\"\n", shmpath, shmp);
 
     close(fd);          /* 'fd' is no longer needed */
-
-
-    //#### critical section begin ####
-
-    //printf("waiting for peer proccess:\n");
-
-    if (sem_wait(&shmp->rb) == -1)
-        errExit("sem_wait");
-
-    //printf("Ready (writing esssential data)\n");
-    /* Copy data into the shared memory object. */
-
-    shmp->cnt = len;
-    shmp->term = 0;
-    shmp->ma = 0;
-    shmp->mb = 0;
-    memcpy(&shmp->buf, string, len);
-
-    // go back to the other proccess
-    if (sem_post(&shmp->wa) == -1)
-        errExit("sem_post");
-    
-    if (sem_post(&shmp->wb) == -1)
-        errExit("sem_post");
-
 
     int res;
     pthread_t reader_b;

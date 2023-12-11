@@ -22,6 +22,11 @@ void metadata_printer(struct metadata * met) {
 int
 main(int argc, char *argv[])
 {
+    /*###################
+    #                   #
+    #  INITIALIZATIONS  #
+    #                   #
+    ###################*/
     int            fd;
     char           *shmpath;
     struct shmbuf  *shmp;
@@ -33,9 +38,6 @@ main(int argc, char *argv[])
 
     shmpath = argv[1];
 
-    /* Create shared memory object and set its size to the size
-        of our structure. */
-
     fd = shm_open(shmpath, O_CREAT | O_EXCL | O_RDWR, 0600);
     if (fd == -1)
         errExit("shm_open");
@@ -43,17 +45,12 @@ main(int argc, char *argv[])
     if (ftruncate(fd, sizeof(struct shmbuf)) == -1)
         errExit("ftruncate");
 
-    /* Map the object into the caller's address space. */
-
     shmp = mmap(NULL, sizeof(*shmp), PROT_READ | PROT_WRITE,
                 MAP_SHARED, fd, 0);
     if (shmp == MAP_FAILED)
         errExit("mmap");
-
-    // printf("Shared memory object \"%s\" has been created at address\"%p\"\n", shmpath, shmp);
     
-    close(fd);          /* 'fd' is no longer needed */
-    /* Initialize semaphores as process-shared, with value 0. */
+    close(fd);
 
     if (sem_init(&shmp->wa, 1, 0) == -1)
         errExit("sem_init-sem1");
@@ -65,13 +62,27 @@ main(int argc, char *argv[])
         errExit("sem_init-sem2");
 
 
-    // start with proccess 2 writing the essentials.
-    if (sem_post(&shmp->rb) == -1)
+    shmp->cnt = 15;
+    shmp->term = 0;
+    shmp->ma = 0;
+    shmp->mb = 0;
+    /*##########################
+    #                          #
+    #  END OF INITIALIZATIONS  #
+    #                          #
+    ##########################*/
+
+
+    // start with both proccesses being able to write
+    if (sem_post(&shmp->wa) == -1)
         errExit("sem_post");
+    
+    if (sem_post(&shmp->wb) == -1)
+        errExit("sem_post");
+    //printf("remember, eof is ctlr+d\n");
 
-    printf("remember, eof is ctlr+d\n");
 
-
+    // CREATE WRITER AND READER THREADS
     int res;
     pthread_t writer_a;
     void *thread_result;
@@ -80,7 +91,6 @@ main(int argc, char *argv[])
         perror("Thread creation failed");
         exit(EXIT_FAILURE);
     }
-    //writer_func_a(shmp);
     int res2;
     pthread_t reader_a;
     void *thread_result2;
@@ -90,21 +100,22 @@ main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }    
 
-
     
+    // END THREADS
     res2 = pthread_join(reader_a, &thread_result2);
     if (res2 != 0) {
         perror("Thread join failed");
         exit(EXIT_FAILURE);
     }
-    pthread_cancel(writer_a);
+    pthread_cancel(writer_a); // when the reader thread ends, stop the writer thread
     res = pthread_join(writer_a, &thread_result);
     if (res != 0) {
         perror("Thread join failed");
         exit(EXIT_FAILURE);
     }
     printf("Thread was successfull!!!\n");
-    //exit(EXIT_SUCCESS);
+
+
 
     printf("#### END OF PROCCESS ####\n");
 
