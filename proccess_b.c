@@ -64,6 +64,8 @@ main(int argc, char *argv[])
 
     shmp->cnt = len;
     shmp->term = 0;
+    shmp->ma = 0;
+    shmp->mb = 0;
     memcpy(&shmp->buf, string, len);
 
     // go back to the other proccess
@@ -107,6 +109,15 @@ main(int argc, char *argv[])
     printf("Thread was successfull!!!\n");
 
 
+    sem_close(&shmp->wa);
+    sem_close(&shmp->wb);
+    sem_close(&shmp->ra);
+    sem_close(&shmp->rb);
+    sem_destroy(&shmp->wa);
+    sem_destroy(&shmp->wb);
+    sem_destroy(&shmp->ra);
+    sem_destroy(&shmp->rb);
+
     write(STDOUT_FILENO, "#### END OF PROCCESS ####\n", 26);
 
     exit(EXIT_SUCCESS);
@@ -145,6 +156,7 @@ void * writer_func_b(void * memseg) {
             shmp->buf[j] = ch;
             shmp->pos++;
             if (ch == '\n') {
+                shmp->mb++;
                 break;
             }
             if (j < shmp->cnt - 1) {
@@ -173,7 +185,6 @@ void * writer_func_b(void * memseg) {
 void * reader_func_b(void * memseg) {
     struct shmbuf *shmp = memseg;
     time_t t = 0;
-    printf("time is %ld\n",t);
     time_t tim = 0;
 
     int flag = 0;
@@ -245,9 +256,11 @@ void * reader_func_b(void * memseg) {
         }
     }
     shmp->pos = 1;
+    int sent = shmp->mb;
     
     float average_pack = packnum/(float)messagenum;
     printf("received %d messages.\n", messagenum);
+    printf("sent %d packages.\n", sent);
     printf("received %d packages.\n", packnum);
     printf("average num of packages: %f\n", average_pack);
     float average_time = tim / (float)(messagenum-1); 

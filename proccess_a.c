@@ -147,6 +147,7 @@ void * writer_func_a(void * memseg) {
             shmp->buf[j] = ch;
             shmp->pos++;
             if (ch == '\n') {
+                shmp->ma++;
                 break;
             }
             if (j < shmp->cnt - 1) {
@@ -176,7 +177,6 @@ void * writer_func_a(void * memseg) {
 void * reader_func_a(void * memseg) {
     struct shmbuf *shmp = memseg;
     time_t t = 0;
-    printf("time is %ld\n",t);
     time_t tim = 0;
 
     int flag = 0;
@@ -248,12 +248,13 @@ void * reader_func_a(void * memseg) {
         }
     }
     shmp->pos = 1;
+    int sent = shmp->ma;
     
     float average_pack = packnum/(float)messagenum;
     printf("received %d messages.\n", messagenum);
+    printf("sent %d packages.\n", sent);
     printf("received %d packages.\n", packnum);
     printf("average num of packages: %f\n", average_pack);
-    printf("time in seconds: %ld\n", tim);
     float average_time = tim / (float)(messagenum-1); 
     printf("average time is %f\n", average_time);
     printf("reader a ded\n");

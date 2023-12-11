@@ -23,6 +23,8 @@ struct shmbuf {
     sem_t  rb;              // semaphore for reader thread in proccess b
     int    term;
     int    pos;
+    int    ma;              // number of messages sent by proccess a
+    int    mb;              // number of messages sent by proccess b
     size_t cnt;             /* Number of bytes used in 'buf' */
     char   buf[BUF_SIZE];   /* Data being transferred */
 };
